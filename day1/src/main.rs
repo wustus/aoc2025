@@ -33,7 +33,7 @@ fn read_input() -> Option<String> {
   Some(buf.trim().to_owned())
 }
 
-fn step(pos: u16, action: &str) -> u16 {
+fn step(pos: &mut u16, action: &str) -> u16 {
   if action.len() < 2 {
     panic!("Input wrong. Expected direction and number, got: {}", action)
   }
@@ -46,11 +46,22 @@ fn step(pos: u16, action: &str) -> u16 {
   let n: u16 = num_str
     .parse()
     .unwrap_or_else(|_| panic!("Input wrong. Expected number, got: {}", num_str));
-  let new_pos = match dir {
-    Direction::Left => (pos + 100 - (n % 100)) % 100,
-    Direction::Right => (pos + n) % 100,
+  let old_pos = *pos;
+  *pos = match dir {
+    Direction::Left => (*pos + 100 - (n % 100)) % 100,
+    Direction::Right => (*pos + n) % 100,
   };
-  new_pos
+  let mut inc: u16 = 0;
+  // part one
+  // if *pos == 0 {
+  //   inc += 1;
+  // }
+  // part two
+  inc += match dir {
+    Direction::Left => n / 100 + u16::from(old_pos > 0 && n % 100 >= old_pos),
+    Direction::Right => n / 100 + u16::from(*pos < old_pos),
+  };
+  inc
 }
 
 fn main() {
@@ -62,10 +73,7 @@ fn main() {
   let mut pos = 50;
   let mut password: u16 = 0;
   for action in input.lines() {
-    pos = step(pos, action);
-    if pos == 0u16 {
-      password += 1;
-    }
+    password += step(&mut pos, action);
   }
   println!("Password: {}", password);
 }
