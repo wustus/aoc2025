@@ -32,26 +32,26 @@ fn read_input() -> Option<String> {
   read_file(&path)
 }
 
-fn get_max_jolts(s: &String) -> String {
-  s.split("")
-    .max()
-    .unwrap_or_else(|| panic!("Unable to get max joltage!"))
-    .to_owned()
-}
-
 fn calculate_joltage(bank: &str, n: usize) -> u64 {
-  let mut s = bank.to_owned();
-  let mut joltage = String::from("");
-  for max_end in (0..=n-1).rev() {
-    let l = s.len();
-    let candidates = s[..l-max_end].to_owned();
-    let max_in_range = &get_max_jolts(&candidates);
-    joltage += max_in_range;
-    let max_index = candidates.find(max_in_range.as_str())
-      .unwrap_or_else(|| panic!("Didn't find max joltage in range."));
-    s = s[max_index+1..].to_owned();
+  let bytes = bank.as_bytes();
+  let mut start = 0;
+  let mut joltage = String::with_capacity(n);
+  for min_remaining in (0..n).rev() {
+    // we have to leave at least `min_remaining` digits for future iterations
+    //  the last byte we can consider is bytes.len()-1-min_remaining
+    let search_end = bytes.len() - min_remaining;
+    let mut max_idx = start;
+    let mut max_id = bytes[start];
+    for i in (start+1)..search_end {
+      if bytes[i] > max_id {
+        max_idx = i;
+        max_id = bytes[i];
+      }
+    }
+    start = max_idx+1;
+    joltage.push(max_id as char);
   }
-  joltage.parse().unwrap_or_else(|_| panic!("Unable to parse joltage."))
+  joltage.parse().expect("Unable to parse joltage.")
 }
 
 fn main() {
@@ -61,11 +61,9 @@ fn main() {
     return;
   };
   let password: u64 = input
-    .split("\n")
-    .map(|b| {
-      let out = calculate_joltage(&b, 12);
-      out
-    })
+    .lines()
+    .filter(|l| !l.is_empty())
+    .map(|b| calculate_joltage(&b, 12))
     .sum();
   println!("Password: {}", password);
 }
